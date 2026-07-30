@@ -1,0 +1,1562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IOCL Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --paper:#FAF9F5;
+    --paper-dim:#F1EFE8;
+    --ink:#1E1D1A;
+    --ink-soft:#6B6A62;
+    --line:#D9D6C9;
+    --rust:#B24C2E;
+    --rust-dim:#E9DCD3;
+    --green:#4B6B4F;
+    --mono:'IBM Plex Mono', monospace;
+    --sans:'IBM Plex Sans', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--sans);
+    padding:32px 20px 80px;
+  }
+  .wrap{max-width:920px;margin:0 auto;}
+
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    border-bottom:2px solid var(--ink);
+    padding-bottom:14px;
+    margin-bottom:6px;
+  }
+  .brand{
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+  }
+  h1{
+    font-family:var(--mono);
+    font-weight:600;
+    font-size:26px;
+    margin:2px 0 0;
+    letter-spacing:-0.01em;
+  }
+  .rev{
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--ink-soft);
+    text-align:right;
+  }
+
+  .section-label{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--rust);
+    margin:34px 0 10px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .section-label::after{
+    content:'';
+    flex:1;
+    height:1px;
+    background:var(--line);
+  }
+
+  /* Sync panel */
+  .sync-panel{
+    border:1px solid var(--line);
+    background:var(--paper-dim);
+    padding:14px 16px;
+  }
+  .sync-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr auto;
+    gap:10px;
+    align-items:end;
+  }
+  .sync-field label{
+    display:block;
+    font-family:var(--mono);
+    font-size:10px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin-bottom:4px;
+  }
+  .sync-field input{
+    width:100%;
+    font-family:var(--mono);
+    font-size:13px;
+    padding:8px 9px;
+    border:1px solid var(--line);
+    background:var(--paper);
+    color:var(--ink);
+  }
+  .sync-field input:focus{outline:none;border-color:var(--rust);}
+  .sync-btn{
+    font-family:var(--mono);
+    font-size:12px;
+    background:var(--ink);
+    color:var(--paper);
+    border:1px solid var(--ink);
+    padding:9px 16px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .sync-btn:hover{background:var(--rust);border-color:var(--rust);}
+  .sync-btn:disabled{opacity:.5;cursor:default;}
+  .sync-status{
+    font-family:var(--mono);
+    font-size:11px;
+    margin-top:10px;
+    color:var(--ink-soft);
+  }
+  .sync-status.ok{color:var(--green);}
+  .sync-status.err{color:var(--rust);}
+  .sync-help{
+    font-size:11px;
+    color:var(--ink-soft);
+    margin-top:8px;
+    line-height:1.5;
+  }
+  .paste-fallback{
+    margin-top:12px;
+    display:none;
+  }
+  .paste-fallback.show{display:block;}
+  .paste-fallback textarea{
+    width:100%;
+    min-height:90px;
+    font-family:var(--mono);
+    font-size:12px;
+    padding:9px;
+    border:1px solid var(--line);
+    background:var(--paper);
+    color:var(--ink);
+    resize:vertical;
+  }
+  .paste-fallback textarea:focus{outline:none;border-color:var(--rust);}
+
+  /* Price list */
+  details{
+    border:1px solid var(--line);
+    background:var(--paper-dim);
+  }
+  summary{
+    cursor:pointer;
+    padding:12px 16px;
+    font-family:var(--mono);
+    font-size:13px;
+    font-weight:600;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    list-style:none;
+  }
+  summary::-webkit-details-marker{display:none;}
+  summary .hint{font-weight:400;color:var(--ink-soft);text-transform:none;letter-spacing:0;font-family:var(--sans);}
+  .price-list-body{padding:0 16px 16px;}
+
+  table{width:100%;border-collapse:collapse;}
+  .plist th{
+    text-align:left;
+    font-family:var(--mono);
+    font-size:10px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    padding:8px 6px;
+    border-bottom:1px solid var(--line);
+  }
+  .plist td{
+    padding:5px 6px;
+    border-bottom:1px solid var(--line);
+  }
+  .plist input{
+    width:100%;
+    border:1px solid transparent;
+    background:transparent;
+    font-family:var(--mono);
+    font-size:13px;
+    padding:4px 5px;
+    color:var(--ink);
+  }
+  .plist input:hover{border-color:var(--line);}
+  .plist input:focus{outline:none;border-color:var(--rust);background:var(--paper);}
+  .plist .num{text-align:right;}
+  .row-del{
+    background:none;border:none;cursor:pointer;color:var(--ink-soft);
+    font-family:var(--mono);font-size:15px;padding:2px 6px;
+  }
+  .row-del:hover{color:var(--rust);}
+  .plist-actions{display:flex;justify-content:space-between;align-items:center;margin-top:10px;}
+  .add-row{
+    font-family:var(--mono);font-size:12px;background:none;border:1px dashed var(--ink-soft);
+    color:var(--ink);padding:6px 12px;cursor:pointer;
+  }
+  .add-row:hover{border-color:var(--rust);color:var(--rust);}
+  .csv-note{font-size:11px;color:var(--ink-soft);}
+
+  /* Order table */
+  .order-table{border:1px solid var(--line);}
+  .order-head, .order-row{
+    display:grid;
+    grid-template-columns:1.6fr 1.1fr .85fr 1fr .8fr 1fr 32px;
+    gap:0;
+    align-items:center;
+  }
+  .order-head{
+    font-family:var(--mono);
+    font-size:10px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    background:var(--paper-dim);
+    border-bottom:1px solid var(--line);
+  }
+  .order-head div, .order-row > div{padding:10px 10px;}
+  .order-row{border-bottom:1px solid var(--line);}
+  .order-row:last-child{border-bottom:none;}
+
+  select, .qty-input{
+    width:100%;
+    font-family:var(--sans);
+    font-size:13px;
+    padding:7px 8px;
+    border:1px solid var(--line);
+    background:var(--paper);
+    color:var(--ink);
+  }
+  .qty-input{font-family:var(--mono);text-align:right;}
+  select:focus, .qty-input:focus{outline:none;border-color:var(--rust);}
+
+  .price-cell, .subtotal-cell{
+    font-family:var(--mono);
+    font-size:13px;
+    text-align:right;
+  }
+  .discount-cell{
+    font-family:var(--mono);
+    font-size:13px;
+    text-align:right;
+  }
+  .discount-cell.has-discount{color:var(--green);}
+  .flag{color:var(--rust);font-size:11px;}
+
+  .del-line{
+    background:none;border:none;cursor:pointer;color:var(--ink-soft);
+    font-family:var(--mono);font-size:16px;
+  }
+  .del-line:hover{color:var(--rust);}
+
+  .add-line-wrap{padding:12px;}
+  .add-line{
+    width:100%;
+    font-family:var(--mono);
+    font-size:12px;
+    background:none;
+    border:1px dashed var(--ink-soft);
+    padding:10px;
+    cursor:pointer;
+    color:var(--ink);
+  }
+  .add-line:hover{border-color:var(--rust);color:var(--rust);}
+
+  /* Total */
+  .total-strip{
+    margin-top:0;
+    border:1px solid var(--ink);
+    border-top:none;
+    background:var(--ink);
+    color:var(--paper);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:16px 18px;
+  }
+  .total-label{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:#c9c7bb;
+  }
+  .total-value{
+    font-family:var(--mono);
+    font-size:26px;
+    font-weight:600;
+    letter-spacing:-.01em;
+  }
+  .total-sub{
+    font-family:var(--mono);
+    font-size:11px;
+    color:#c9c7bb;
+    margin-top:2px;
+  }
+
+  @media (max-width:720px){
+    .order-head{display:none;}
+    .order-row{
+      grid-template-columns:1fr 1fr;
+      padding:10px 10px 4px;
+      row-gap:6px;
+    }
+    .order-row > div{padding:0;}
+    .order-row .label{
+      font-family:var(--mono);font-size:9px;text-transform:uppercase;
+      color:var(--ink-soft);margin-bottom:3px;letter-spacing:.08em;
+    }
+    .order-row .del-line{grid-column:1/-1;justify-self:end;}
+  }
+
+  /* Order CTA + multi-page flow */
+  .order-cta-wrap{margin-top:16px;text-align:right;}
+  .order-cta{
+    font-family:var(--mono);
+    font-size:14px;
+    font-weight:600;
+    background:var(--rust);
+    color:var(--paper);
+    border:1px solid var(--rust);
+    padding:12px 22px;
+    cursor:pointer;
+  }
+  .order-cta:hover{background:#963d24;}
+  .order-cta-error{
+    color:var(--rust);
+    font-size:12px;
+    font-family:var(--mono);
+    margin-top:8px;
+  }
+
+  .details-panel{
+    border:1px solid var(--line);
+    background:var(--paper-dim);
+    padding:20px;
+  }
+  .field-row{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+  }
+  .field{margin-bottom:14px;}
+  .field label{
+    display:block;
+    font-family:var(--mono);
+    font-size:10px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin-bottom:5px;
+  }
+  .field input{
+    width:100%;
+    font-family:var(--sans);
+    font-size:14px;
+    padding:9px 10px;
+    border:1px solid var(--line);
+    background:var(--paper);
+    color:var(--ink);
+  }
+  .field input:focus{outline:none;border-color:var(--rust);}
+  .field input[readonly]{
+    background:var(--paper-dim);
+    color:var(--ink-soft);
+    cursor:default;
+  }
+  .field input[readonly]:focus{border-color:var(--line);}
+
+  .checkbox-row{display:flex;gap:22px;margin-top:4px;}
+  .checkbox-option{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-family:var(--sans);
+    font-size:14px;
+    cursor:pointer;
+  }
+  .checkbox-option input{width:16px;height:16px;cursor:pointer;}
+
+  .details-error{
+    color:var(--rust);
+    font-size:12px;
+    font-family:var(--mono);
+    min-height:16px;
+    margin:6px 0 4px;
+  }
+  .details-actions{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:10px;
+  }
+  .btn-secondary{
+    font-family:var(--mono);
+    font-size:13px;
+    background:none;
+    border:1px solid var(--ink-soft);
+    color:var(--ink);
+    padding:11px 16px;
+    cursor:pointer;
+  }
+  .btn-secondary:hover{border-color:var(--ink);}
+
+  .review-panel{
+    border:1px solid var(--line);
+    background:var(--paper-dim);
+    padding:20px;
+  }
+  .review-block{
+    margin-bottom:18px;
+    padding-bottom:16px;
+    border-bottom:1px solid var(--line);
+  }
+  .review-block:last-of-type{border-bottom:none;}
+  .review-label{
+    font-family:var(--mono);
+    font-size:10px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--rust);
+    margin-bottom:8px;
+  }
+  .review-line{
+    font-size:14px;
+    line-height:1.7;
+  }
+  .review-line strong{font-weight:600;}
+  .review-item-row{
+    display:flex;
+    justify-content:space-between;
+    font-family:var(--mono);
+    font-size:13px;
+    padding:5px 0;
+    border-bottom:1px dashed var(--line);
+  }
+  .review-item-row:last-child{border-bottom:none;}
+  .review-total{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-family:var(--mono);
+    font-size:20px;
+    font-weight:600;
+    padding-top:8px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <div class="brand">Order Sheet · IOCL</div>
+      <h1>IOCL Portal</h1>
+    </div>
+    <div class="rev">v1.0<br>per-unit pricing</div>
+  </header>
+
+  <div id="page-order">
+
+  <div style="display:none;" id="adminSections">
+
+  <div class="section-label">Sync source</div>
+  <div class="sync-panel">
+    <div class="sync-grid">
+      <div class="sync-field">
+        <label>Google Sheet ID</label>
+        <input id="sheetId" placeholder="from the sheet URL, between /d/ and /edit">
+      </div>
+      <div class="sync-field">
+        <label>Tab name</label>
+        <input id="sheetTab" placeholder="wholesale combined" value="wholesale combined">
+      </div>
+      <button class="sync-btn" id="syncBtn">Sync now</button>
+    </div>
+    <div class="sync-status" id="syncStatus">Not synced yet — enter your sheet ID above.</div>
+    <div class="sync-help">
+      Sheet must be shared as "Anyone with the link — Viewer." The ID is the long string in your sheet's URL:
+      docs.google.com/spreadsheets/d/<strong>THIS_PART</strong>/edit. Columns should be headed item, size, MOQ, price (any order).
+    </div>
+    <div class="paste-fallback" id="pasteFallback">
+      <div class="sync-help" style="margin-top:0;color:var(--rust);">
+        Direct sync didn't go through — this can happen depending on where this page is hosted. Paste the data instead: open your sheet, select the item/size/MOQ/price columns (including headers), copy, and paste here.
+      </div>
+      <textarea id="pasteArea" placeholder="Paste copied cells from Google Sheets here (tab-separated)"></textarea>
+      <button class="sync-btn" id="pasteBtn" style="margin-top:8px;">Use pasted data</button>
+    </div>
+  </div>
+
+  <div class="section-label">Price list</div>
+  <details id="priceListDetails">
+    <summary>Item · size · MOQ · price <span class="hint">— edit this to match your "wholesale combined" sheet</span></summary>
+    <div class="price-list-body">
+      <table class="plist">
+        <thead>
+          <tr>
+            <th style="width:32%">Item</th>
+            <th style="width:22%">Size</th>
+            <th style="width:16%">MOQ</th>
+            <th style="width:18%">Price / unit</th>
+            <th style="width:6%"></th>
+          </tr>
+        </thead>
+        <tbody id="plistBody"></tbody>
+      </table>
+      <div class="plist-actions">
+        <button class="add-row" id="addPlistRow">+ add price tier</button>
+        <span class="csv-note">Changes here update the dropdowns and pricing below instantly.</span>
+      </div>
+    </div>
+  </details>
+
+  </div>
+
+  <div class="section-label">Order</div>
+  <div class="order-table">
+    <div class="order-head">
+      <div>Item</div>
+      <div>Size</div>
+      <div>Qty</div>
+      <div>Price / unit</div>
+      <div>Discount</div>
+      <div>Subtotal</div>
+      <div></div>
+    </div>
+    <div id="orderBody"></div>
+    <div class="add-line-wrap">
+      <button class="add-line" id="addOrderLine">+ add item</button>
+    </div>
+  </div>
+
+  <div class="total-strip">
+    <div>
+      <div class="total-label">Order total</div>
+      <div class="total-sub" id="lineCountNote">0 line items</div>
+    </div>
+    <div class="total-value" id="grandTotal">$0.00</div>
+  </div>
+
+  <div class="order-cta-wrap">
+    <button class="order-cta" id="orderNowBtn">Proceed →</button>
+    <div class="order-cta-error" id="orderNowError"></div>
+  </div>
+
+  </div>
+  <!-- /page-order -->
+
+  <!-- ===== PAGE 2: customer details ===== -->
+  <div id="page-details" style="display:none;">
+
+    <div class="section-label">Your details</div>
+    <div class="details-panel">
+      <div class="field-row">
+        <div class="field">
+          <label>Representative *</label>
+          <input type="text" id="custName" placeholder="Enter representative name">
+        </div>
+        <div class="field">
+          <label>Company name</label>
+          <input type="text" id="custCompany" value="Inland and Offshore Contractors Limited" readonly>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Email address *</label>
+          <input type="email" id="custEmail" value="shelly@iocltt.com" readonly>
+        </div>
+        <div class="field">
+          <label>Phone number *</label>
+          <input type="tel" id="custPhone" value="+1 (868) 235-4625" readonly>
+        </div>
+      </div>
+      <div class="field">
+        <label>Delivery address</label>
+        <input type="text" id="custAddress" value="6B Otaheite Industrial Park, South Oropouche, Trinidad" readonly>
+      </div>
+
+      <div class="field">
+        <label>Fulfillment method *</label>
+        <div class="checkbox-row">
+          <label class="checkbox-option">
+            <input type="checkbox" id="methodDelivery"> Delivery
+          </label>
+          <label class="checkbox-option">
+            <input type="checkbox" id="methodPickup"> Pickup
+          </label>
+        </div>
+      </div>
+
+      <div class="details-error" id="detailsError"></div>
+
+      <div class="details-actions">
+        <button class="btn-secondary" id="backToOrderBtn">← Back to order</button>
+        <button class="order-cta" id="reviewBtn">Review →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PAGE 3: review & confirm ===== -->
+  <div id="page-review" style="display:none;">
+
+    <div class="section-label">Review your order</div>
+    <div class="review-panel">
+      <div id="reviewCustomer" class="review-block"></div>
+      <div id="reviewItems" class="review-block"></div>
+      <div id="reviewTotal" class="review-total"></div>
+
+      <div class="details-actions">
+        <button class="btn-secondary" id="backToDetailsBtn">← Back to details</button>
+        <div style="display:flex;gap:10px;">
+          <button class="btn-secondary" id="exportQuoteBtn">Export Quote</button>
+          <button class="order-cta" id="confirmBtn">Confirm Order</button>
+        </div>
+      </div>
+      <div class="details-error" id="quoteError" style="text-align:right;"></div>
+      <div class="sync-help" style="margin-top:10px;">
+        Clicking confirm opens your email app with the order pre-filled to <strong>info@allcrucial.com</strong> — just hit send.
+      </div>
+    </div>
+  </div>
+  <!-- ===== PAGE 4: success ===== -->
+  <div id="page-success" style="display:none;">
+    <div class="section-label">Order sent</div>
+    <div class="review-panel" style="text-align:center;padding:40px 20px;">
+      <div style="font-family:var(--mono);font-size:15px;color:var(--green);font-weight:600;margin-bottom:10px;">
+        ✓ Your order has been sent to All Crucial
+      </div>
+      <div style="font-size:14px;color:var(--ink-soft);margin-bottom:22px;">
+        We'll be in touch shortly to confirm details.
+      </div>
+      <button class="order-cta" id="newOrderBtn">Start a new order</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// Price list is populated once the Google Sheet sync completes (see doSync below).
+// dataReady tracks whether the initial sync has finished, so dropdowns can show
+// "Loading…" beforehand instead of briefly flashing stale/empty data.
+let priceList = [];
+let dataReady = false;
+
+let orderLines = [
+  { item:'', size:'', qty:1 },
+];
+
+const plistBody = document.getElementById('plistBody');
+const orderBody = document.getElementById('orderBody');
+const addPlistRowBtn = document.getElementById('addPlistRow');
+const addOrderLineBtn = document.getElementById('addOrderLine');
+const grandTotalEl = document.getElementById('grandTotal');
+const lineCountNote = document.getElementById('lineCountNote');
+
+function fmtMoney(n){
+  if(isNaN(n)) return '—';
+  return '$' + n.toFixed(2);
+}
+
+function uniqueItems(){
+  return [...new Set(priceList.map(r=>r.item))].filter(Boolean).sort();
+}
+
+// Extracts a comparable volume value so sizes sort numerically (1L before 4L, 500ml before 1L, etc.)
+// rather than alphabetically. Falls back to a large number (sorts last) for non-numeric sizes.
+function sizeSortValue(sizeStr){
+  const s = String(sizeStr).toLowerCase();
+  const match = s.match(/(\d+(\.\d+)?)/);
+  if(!match) return Infinity;
+  let num = parseFloat(match[1]);
+  if(s.includes('ml')) return num;               // already in millilitres
+  if(s.includes('l')) return num * 1000;          // litres -> millilitres
+  return num;                                      // unitless numbers (e.g. plain sizes) compare as-is
+}
+
+function sizesForItem(item){
+  const sizes = [...new Set(priceList.filter(r=>r.item===item).map(r=>r.size))].filter(Boolean);
+  return sizes.sort((a,b)=>{
+    const va = sizeSortValue(a), vb = sizeSortValue(b);
+    if(va !== vb) return va - vb;
+    return a.localeCompare(b); // tie-break alphabetically for equal/non-numeric sizes
+  });
+}
+
+// best tier: highest MOQ <= qty, for a given item+size
+function matchTier(item, size, qty){
+  const tiers = priceList
+    .filter(r=>r.item===item && r.size===size && Number(r.moq)<=Number(qty))
+    .sort((a,b)=>Number(a.moq)-Number(b.moq));
+  if(tiers.length===0) return null;
+  return tiers[tiers.length-1];
+}
+function baseTier(item, size){
+  const tiers = priceList
+    .filter(r=>r.item===item && r.size===size)
+    .sort((a,b)=>Number(a.moq)-Number(b.moq));
+  return tiers[0] || null;
+}
+
+// ---------- Render price list editor ----------
+function renderPriceList(){
+  plistBody.innerHTML = '';
+  priceList.forEach((row, i)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input value="${row.item}" data-field="item" data-i="${i}"></td>
+      <td><input value="${row.size}" data-field="size" data-i="${i}"></td>
+      <td><input class="num" type="number" min="1" value="${row.moq}" data-field="moq" data-i="${i}"></td>
+      <td><input class="num" type="number" step="0.01" min="0" value="${row.price}" data-field="price" data-i="${i}"></td>
+      <td><button class="row-del" data-i="${i}" title="Remove tier">×</button></td>
+    `;
+    plistBody.appendChild(tr);
+  });
+
+  plistBody.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('input', e=>{
+      const i = +e.target.dataset.i;
+      const field = e.target.dataset.field;
+      let val = e.target.value;
+      if(field==='moq' || field==='price') val = val === '' ? 0 : parseFloat(val);
+      priceList[i][field] = val;
+      renderOrder(); // dropdowns/prices may depend on this
+    });
+  });
+  plistBody.querySelectorAll('.row-del').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      const i = +e.target.dataset.i;
+      priceList.splice(i,1);
+      renderPriceList();
+      renderOrder();
+    });
+  });
+}
+
+addPlistRowBtn.addEventListener('click', ()=>{
+  priceList.push({item:'', size:'', moq:1, price:0});
+  renderPriceList();
+});
+
+// ---------- Render order lines ----------
+function renderOrder(){
+  orderBody.innerHTML = '';
+  const items = uniqueItems();
+  let grandTotal = 0;
+
+  orderLines.forEach((line, i)=>{
+    if(line.item && !items.includes(line.item)) line.item = '';
+    const sizes = sizesForItem(line.item);
+    if(line.size && !sizes.includes(line.size)) line.size = '';
+
+    const tier = matchTier(line.item, line.size, line.qty);
+    const base = baseTier(line.item, line.size);
+
+    let priceDisplay = '—';
+    let discountDisplay = '—';
+    let subtotalDisplay = '—';
+    let discountClass = '';
+    let flag = '';
+
+    if(tier){
+      priceDisplay = fmtMoney(tier.price);
+      const subtotal = tier.price * (Number(line.qty)||0);
+      subtotalDisplay = fmtMoney(subtotal);
+      grandTotal += subtotal;
+      if(base && base.price > 0){
+        const disc = 1 - (tier.price / base.price);
+        discountDisplay = disc > 0.0001 ? (disc*100).toFixed(1)+'% off' : 'base price';
+        if(disc > 0.0001) discountClass = 'has-discount';
+      }
+    } else if(line.item && line.size) {
+      flag = 'Below min. MOQ';
+    }
+
+    const row = document.createElement('div');
+    row.className = 'order-row';
+    row.innerHTML = `
+      <div><span class="label">Item</span>
+        <select data-field="item" data-i="${i}" ${dataReady ? '' : 'disabled'}>
+          ${dataReady
+            ? `<option value="" ${line.item===''?'selected':''}>Select item</option>` +
+              items.map(it=>`<option value="${it}" ${it===line.item?'selected':''}>${it}</option>`).join('')
+            : `<option value="" selected>Loading…</option>`}
+        </select>
+      </div>
+      <div><span class="label">Size</span>
+        <select data-field="size" data-i="${i}" ${dataReady ? '' : 'disabled'}>
+          ${dataReady ? `<option value="" ${line.size===''?'selected':''}>Select size</option>` : `<option value="" selected>Loading…</option>`}
+          ${dataReady ? sizes.map(s=>{
+            const isKeg = /keg/i.test(s);
+            const inStock = isKeg && stockSet.has(stockKey(line.item, s));
+            const style = inStock ? 'style="color:#4B6B4F;font-weight:600;"' : '';
+            const label = inStock ? `${s} ●` : s;
+            return `<option value="${s}" ${s===line.size?'selected':''} ${style}>${label}</option>`;
+          }).join('') : ''}
+        </select>
+      </div>
+      <div><span class="label">Qty</span>
+        <input class="qty-input" type="number" min="1" value="${line.qty}" data-field="qty" data-i="${i}">
+      </div>
+      <div><span class="label">Price / unit</span>
+        <div class="price-cell">${priceDisplay}${flag?`<div class="flag">${flag}</div>`:''}</div>
+      </div>
+      <div><span class="label">Discount</span>
+        <div class="discount-cell ${discountClass}">${discountDisplay}</div>
+      </div>
+      <div><span class="label">Subtotal</span>
+        <div class="subtotal-cell">${subtotalDisplay}</div>
+      </div>
+      <div><button class="del-line" data-i="${i}" title="Remove line">×</button></div>
+    `;
+    orderBody.appendChild(row);
+  });
+
+  orderBody.querySelectorAll('select, .qty-input').forEach(el=>{
+    el.addEventListener('change', e=>{
+      const i = +e.target.dataset.i;
+      const field = e.target.dataset.field;
+      let val = e.target.value;
+      if(field==='qty') val = val==='' ? 0 : parseFloat(val);
+      orderLines[i][field] = val;
+      if(field==='item'){
+        // reset size to placeholder when the item changes
+        orderLines[i].size = '';
+      }
+      renderOrder();
+    });
+  });
+  orderBody.querySelectorAll('.del-line').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      const i = +e.target.dataset.i;
+      orderLines.splice(i,1);
+      renderOrder();
+    });
+  });
+
+  grandTotalEl.textContent = fmtMoney(grandTotal);
+  lineCountNote.textContent = `${orderLines.length} line item${orderLines.length===1?'':'s'}`;
+}
+
+addOrderLineBtn.addEventListener('click', ()=>{
+  orderLines.push({ item:'', size:'', qty:1 });
+  renderOrder();
+});
+
+// ---------- Google Sheets sync ----------
+// Your sheet is baked in here so the page auto-syncs on load — update these two lines
+// any time your Sheet ID or tab name changes.
+const DEFAULT_SHEET_ID = '1pYgxGzn8-uF_Hd1Xt2VKOT5A91nHijoiam7azrjlyX8';
+const DEFAULT_SHEET_TAB = 'wholesale combined';
+const STOCK_TAB = 'stock'; // tab with columns: A = product, B = size
+
+let stockSet = new Set(); // holds "item||size" (lowercased) for anything currently in stock
+
+function stockKey(item, size){
+  return String(item).trim().toLowerCase() + '||' + String(size).trim().toLowerCase();
+}
+
+async function fetchStock(sheetId){
+  const url = `https://docs.google.com/spreadsheets/d/${encodeURIComponent(sheetId)}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(STOCK_TAB)}`;
+  try{
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    if(text.trim().startsWith('<')) throw new Error('not viewable');
+    const rows = parseDelimited(text);
+    if(rows.length < 2) return;
+    const header = rows[0].map(h=>h.toLowerCase().trim());
+    const productIdx = header.findIndex(h=>h.includes('product')) !== -1
+      ? header.findIndex(h=>h.includes('product')) : 0;
+    const sizeIdx = header.findIndex(h=>h.includes('size')) !== -1
+      ? header.findIndex(h=>h.includes('size')) : 1;
+    const set = new Set();
+    for(let i=1;i<rows.length;i++){
+      const r = rows[i];
+      if(!r[productIdx]) continue;
+      set.add(stockKey(r[productIdx], r[sizeIdx]));
+    }
+    stockSet = set;
+    renderOrder();
+  }catch(err){
+    // Stock check is a nice-to-have — fail silently so it never blocks pricing sync
+    console.warn('Stock sync skipped:', err.message);
+  }
+}
+
+const sheetIdInput = document.getElementById('sheetId');
+const sheetTabInput = document.getElementById('sheetTab');
+const syncBtn = document.getElementById('syncBtn');
+const syncStatus = document.getElementById('syncStatus');
+const pasteFallback = document.getElementById('pasteFallback');
+const pasteArea = document.getElementById('pasteArea');
+const pasteBtn = document.getElementById('pasteBtn');
+
+sheetIdInput.value = DEFAULT_SHEET_ID;
+sheetTabInput.value = DEFAULT_SHEET_TAB;
+
+function setStatus(msg, cls){
+  syncStatus.textContent = msg;
+  syncStatus.className = 'sync-status' + (cls ? ' '+cls : '');
+}
+
+// Parse delimited text (comma from CSV, or tab from a spreadsheet paste) into rows
+function parseDelimited(text){
+  const delim = text.includes('\t') ? '\t' : ',';
+  const lines = text.trim().split(/\r?\n/).filter(l=>l.length>0);
+  return lines.map(line=>{
+    if(delim === ','){
+      // basic CSV split honoring quoted commas
+      const cells = [];
+      let cur = '', inQuotes = false;
+      for(let i=0;i<line.length;i++){
+        const ch = line[i];
+        if(ch === '"'){ inQuotes = !inQuotes; }
+        else if(ch === ',' && !inQuotes){ cells.push(cur); cur=''; }
+        else{ cur += ch; }
+      }
+      cells.push(cur);
+      return cells.map(c=>c.trim().replace(/^"|"$/g,''));
+    }
+    return line.split('\t').map(c=>c.trim());
+  });
+}
+
+function rowsToPriceList(rows){
+  if(rows.length < 2) throw new Error('No data rows found');
+  const header = rows[0].map(h=>h.toLowerCase().trim());
+  const idx = {
+    item: header.findIndex(h=>h.includes('item')),
+    size: header.findIndex(h=>h.includes('size')),
+    moq: header.findIndex(h=>h.includes('moq') || h.includes('quantity') || h.includes('qty')),
+    price: header.findIndex(h=>h.includes('price')),
+  };
+  if(idx.item===-1 || idx.size===-1 || idx.moq===-1 || idx.price===-1){
+    throw new Error('Could not find item/size/MOQ/price columns in the header row');
+  }
+  const out = [];
+  for(let i=1;i<rows.length;i++){
+    const r = rows[i];
+    if(!r[idx.item]) continue;
+    out.push({
+      item: r[idx.item] || '',
+      size: r[idx.size] || '',
+      moq: parseFloat(r[idx.moq]) || 0,
+      price: parseFloat(String(r[idx.price]).replace(/[^0-9.-]/g,'')) || 0,
+    });
+  }
+  if(out.length===0) throw new Error('No valid rows parsed');
+  return out;
+}
+
+async function doSync(){
+  const id = sheetIdInput.value.trim();
+  const tab = sheetTabInput.value.trim() || 'wholesale combined';
+  if(!id){
+    setStatus('Enter your Google Sheet ID first.', 'err');
+    return;
+  }
+  syncBtn.disabled = true;
+  setStatus('Syncing…');
+  pasteFallback.classList.remove('show');
+
+  const url = `https://docs.google.com/spreadsheets/d/${encodeURIComponent(id)}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(tab)}`;
+
+  try{
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    if(text.trim().startsWith('<')) throw new Error('Sheet not publicly viewable');
+    const rows = parseDelimited(text);
+    const list = rowsToPriceList(rows);
+    priceList = list;
+    setStatus(`Synced ${list.length} price tier${list.length===1?'':'s'} — ${new Date().toLocaleString()}`, 'ok');
+    fetchStock(id); // runs separately; won't block or fail the price sync if the stock tab has issues
+  }catch(err){
+    setStatus('Direct sync failed: ' + err.message + '. Use the paste option below.', 'err');
+    pasteFallback.classList.add('show');
+  }finally{
+    dataReady = true; // clears the "Loading…" dropdown state whether sync succeeded or failed
+    renderPriceList();
+    renderOrder();
+    syncBtn.disabled = false;
+  }
+}
+
+syncBtn.addEventListener('click', doSync);
+
+pasteBtn.addEventListener('click', async ()=>{
+  try{
+    const rows = parseDelimited(pasteArea.value);
+    const list = rowsToPriceList(rows);
+    priceList = list;
+    renderPriceList();
+    renderOrder();
+    setStatus(`Loaded ${list.length} price tier${list.length===1?'':'s'} from pasted data — ${new Date().toLocaleString()}`, 'ok');
+    pasteFallback.classList.remove('show');
+    pasteArea.value = '';
+  }catch(err){
+    setStatus('Could not parse pasted data: ' + err.message, 'err');
+  }
+});
+
+// ---------- Checkout flow (3-page + success) ----------
+const ORDER_EMAIL = 'info@allcrucial.com';
+const LOGO_BASE64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAABTCAYAAADa+UgeAAAACXBIWXMAAArEAAAKxAFmbYLUAAAF92lUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4gPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iQWRvYmUgWE1QIENvcmUgNi4wLWMwMDIgNzkuMTY0NDYwLCAyMDIwLzA1LzEyLTE2OjA0OjE3ICAgICAgICAiPiA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPiA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtbG5zOmRjPSJodHRwOi8vcHVybC5vcmcvZGMvZWxlbWVudHMvMS4xLyIgeG1sbnM6cGhvdG9zaG9wPSJodHRwOi8vbnMuYWRvYmUuY29tL3Bob3Rvc2hvcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RFdnQ9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZUV2ZW50IyIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgMjEuMiAoTWFjaW50b3NoKSIgeG1wOkNyZWF0ZURhdGU9IjIwMjAtMTEtMThUMjE6NTE6MzMtMDY6MDAiIHhtcDpNb2RpZnlEYXRlPSIyMDIxLTA0LTA4VDIzOjIwOjE2LTA2OjAwIiB4bXA6TWV0YWRhdGFEYXRlPSIyMDIxLTA0LTA4VDIzOjIwOjE2LTA2OjAwIiBkYzpmb3JtYXQ9ImltYWdlL3BuZyIgcGhvdG9zaG9wOkNvbG9yTW9kZT0iMyIgcGhvdG9zaG9wOklDQ1Byb2ZpbGU9InNSR0IgSUVDNjE5NjYtMi4xIiB4bXBNTTpJbnN0YW5jZUlEPSJ4bXAuaWlkOjM3Mjg0NTQ0LTVlMGYt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';
+// Paste your Web3Forms access key here once created at web3forms.com
+const WEB3FORMS_ACCESS_KEY = 'b97d3124-85c8-4024-a842-9331f721cc14';
+const WEB3FORMS_ENDPOINT = 'https://api.web3forms.com/submit';
+
+const pageOrder = document.getElementById('page-order');
+const pageDetails = document.getElementById('page-details');
+const pageReview = document.getElementById('page-review');
+const pageSuccess = document.getElementById('page-success');
+
+const orderNowBtn = document.getElementById('orderNowBtn');
+const orderNowError = document.getElementById('orderNowError');
+const backToOrderBtn = document.getElementById('backToOrderBtn');
+const reviewBtn = document.getElementById('reviewBtn');
+const detailsError = document.getElementById('detailsError');
+const backToDetailsBtn = document.getElementById('backToDetailsBtn');
+const confirmBtn = document.getElementById('confirmBtn');
+const exportQuoteBtn = document.getElementById('exportQuoteBtn');
+const quoteError = document.getElementById('quoteError');
+const newOrderBtn = document.getElementById('newOrderBtn');
+
+const methodDelivery = document.getElementById('methodDelivery');
+const methodPickup = document.getElementById('methodPickup');
+// Behave like a single choice even though they're checkboxes, per the requested UI
+methodDelivery.addEventListener('change', ()=>{ if(methodDelivery.checked) methodPickup.checked = false; });
+methodPickup.addEventListener('change', ()=>{ if(methodPickup.checked) methodDelivery.checked = false; });
+
+function showPage(page){
+  pageOrder.style.display = page==='order' ? '' : 'none';
+  pageDetails.style.display = page==='details' ? '' : 'none';
+  pageReview.style.display = page==='review' ? '' : 'none';
+  pageSuccess.style.display = page==='success' ? '' : 'none';
+  window.scrollTo(0,0);
+}
+
+// Collect current valid order lines (mirrors the pricing logic used in renderOrder)
+function getValidOrderLines(){
+  const out = [];
+  orderLines.forEach(line=>{
+    const tier = matchTier(line.item, line.size, line.qty);
+    if(tier){
+      out.push({
+        item: line.item,
+        size: line.size,
+        qty: Number(line.qty)||0,
+        price: tier.price,
+        subtotal: tier.price * (Number(line.qty)||0),
+      });
+    }
+  });
+  return out;
+}
+
+orderNowBtn.addEventListener('click', ()=>{
+  const valid = getValidOrderLines();
+  if(valid.length === 0){
+    orderNowError.textContent = 'Add at least one item with a quantity that meets its minimum order (MOQ) before continuing.';
+    return;
+  }
+  orderNowError.textContent = '';
+  showPage('details');
+});
+
+backToOrderBtn.addEventListener('click', ()=> showPage('order'));
+
+reviewBtn.addEventListener('click', ()=>{
+  const name = document.getElementById('custName').value.trim();
+  const email = document.getElementById('custEmail').value.trim();
+  const phone = document.getElementById('custPhone').value.trim();
+  const method = methodDelivery.checked ? 'Delivery' : (methodPickup.checked ? 'Pickup' : '');
+
+  if(!name || !email || !phone || !method){
+    detailsError.textContent = 'Please fill in name, email, phone, and select delivery or pickup.';
+    return;
+  }
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  if(!emailOk){
+    detailsError.textContent = 'Please enter a valid email address.';
+    return;
+  }
+  detailsError.textContent = '';
+  renderReview();
+  showPage('review');
+});
+
+backToDetailsBtn.addEventListener('click', ()=> showPage('details'));
+
+function renderReview(){
+  const name = document.getElementById('custName').value.trim();
+  const company = document.getElementById('custCompany').value.trim();
+  const email = document.getElementById('custEmail').value.trim();
+  const phone = document.getElementById('custPhone').value.trim();
+  const address = document.getElementById('custAddress').value.trim();
+  const method = methodDelivery.checked ? 'Delivery' : 'Pickup';
+
+  const reviewCustomer = document.getElementById('reviewCustomer');
+  reviewCustomer.innerHTML = `
+    <div class="review-label">Customer</div>
+    <div class="review-line"><strong>${name}</strong>${company ? ' · '+company : ''}</div>
+    <div class="review-line">${email} · ${phone}</div>
+    ${address ? `<div class="review-line">${address}</div>` : ''}
+    <div class="review-line"><strong>${method}</strong></div>
+  `;
+
+  const lines = getValidOrderLines();
+  const reviewItems = document.getElementById('reviewItems');
+  reviewItems.innerHTML = `
+    <div class="review-label">Items</div>
+    ${lines.map(l=>`
+      <div class="review-item-row">
+        <span>${l.item} — ${l.size} × ${l.qty}</span>
+        <span>${fmtMoney(l.subtotal)}</span>
+      </div>
+    `).join('')}
+  `;
+
+  const total = lines.reduce((sum,l)=>sum+l.subtotal, 0);
+  document.getElementById('reviewTotal').innerHTML = `
+    <span>Total</span><span>${fmtMoney(total)}</span>
+  `;
+}
+
+confirmBtn.addEventListener('click', async ()=>{
+  const name = document.getElementById('custName').value.trim();
+  const company = document.getElementById('custCompany').value.trim();
+  const email = document.getElementById('custEmail').value.trim();
+  const phone = document.getElementById('custPhone').value.trim();
+  const address = document.getElementById('custAddress').value.trim();
+  const method = methodDelivery.checked ? 'Delivery' : 'Pickup';
+  const lines = getValidOrderLines();
+  const total = lines.reduce((sum,l)=>sum+l.subtotal, 0);
+
+  const itemsSummary = lines
+    .map(l=>`${l.item} (${l.size}) x${l.qty} @ ${fmtMoney(l.price)} = ${fmtMoney(l.subtotal)}`)
+    .join('\n');
+
+  const subject = `IOCL order — ${name}${company ? ' / '+company : ''}`;
+  const bodyText = [
+    `Customer: ${name}`,
+    company ? `Company: ${company}` : null,
+    `Email: ${email}`,
+    `Phone: ${phone}`,
+    address ? `Address: ${address}` : null,
+    `Fulfillment: ${method}`,
+    ``,
+    `Items:`,
+    itemsSummary,
+    ``,
+    `Order total: ${fmtMoney(total)}`,
+  ].filter(Boolean).join('\n');
+
+  function fallbackToMailto(){
+    const mailtoUrl = `mailto:${ORDER_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
+    window.location.href = mailtoUrl;
+  }
+
+  if(!WEB3FORMS_ACCESS_KEY || WEB3FORMS_ACCESS_KEY === 'YOUR_ACCESS_KEY'){
+    // Not configured yet — use the email-app fallback so ordering still works
+    fallbackToMailto();
+    return;
+  }
+
+  confirmBtn.disabled = true;
+  confirmBtn.textContent = 'Sending…';
+
+  // Generate and download the order confirmation PDF for the customer right away
+  let orderNo = '';
+  try{
+    const { doc, orderNo: generatedNo, name: custName } = buildOrderConfirmationDoc();
+    orderNo = generatedNo;
+    doc.save(`Order-${orderNo}-${custName.replace(/\s+/g,'_')}.pdf`);
+  }catch(pdfErr){
+    console.warn('Could not generate order confirmation PDF:', pdfErr.message);
+  }
+
+  try{
+    const res = await fetch(WEB3FORMS_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'Accept':'application/json' },
+      body: JSON.stringify({
+        access_key: WEB3FORMS_ACCESS_KEY,
+        subject: subject,
+        from_name: name,
+        email: email,
+        replyto: email,
+        name, company, phone, address,
+        fulfillment: method,
+        order_number: orderNo,
+        items: itemsSummary,
+        total: fmtMoney(total),
+        message: bodyText,
+      }),
+    });
+    const data = await res.json();
+    if(!res.ok || data.success === false) throw new Error(data.message || 'Submission failed');
+    showPage('success');
+  }catch(err){
+    // Silent send failed — fall back to opening the customer's email app so the order still goes through
+    fallbackToMailto();
+  }finally{
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = 'Confirm Order';
+  }
+});
+
+// ---------- Export Quote (PDF) ----------
+const COMPANY_NAME = 'Crucial Liquid Products Ltd.';
+const COMPANY_ADDRESS = '6B Otaieite Industrial Park, South Oropouche, Trinidad';
+const COMPANY_EMAIL = 'info@allcrucial.com';
+const COMPANY_PHONE = '1(868)772-8717';
+
+function buildOrderConfirmationDoc(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:'pt', format:'a4' });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 48;
+  let y = 50;
+
+  const logoW = 110, logoH = 45.65;
+  doc.addImage(LOGO_BASE64, 'PNG', margin, y, logoW, logoH);
+
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(11);
+  doc.text(COMPANY_NAME, pageWidth - margin, y+10, { align:'right' });
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(9);
+  doc.text(COMPANY_ADDRESS, pageWidth - margin, y+24, { align:'right' });
+  doc.text(COMPANY_EMAIL + '  ·  ' + COMPANY_PHONE, pageWidth - margin, y+37, { align:'right' });
+
+  y += logoH + 30;
+  doc.setDrawColor(200,200,200);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 30;
+
+  const today = new Date();
+  const fmtDate = d => d.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+  const pad = (n, len=2) => String(n).padStart(len, '0');
+  const orderLinesForDoc = getValidOrderLines();
+
+  function hashItems(lines){
+    const str = lines.map(l=>`${l.item}|${l.size}|${l.qty}`).join(';');
+    let h = 0;
+    for(let i=0;i<str.length;i++){ h = (h * 31 + str.charCodeAt(i)) >>> 0; }
+    return h.toString(36).toUpperCase().slice(-3).padStart(3,'0');
+  }
+  const yy = String(today.getFullYear()).slice(-2);
+  const orderNo = 'O' + yy + pad(today.getMonth()+1) + pad(today.getDate()) + hashItems(orderLinesForDoc);
+
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(18);
+  doc.text('ORDER CONFIRMATION', margin, y);
+  doc.setFontSize(9);
+  doc.setFont('helvetica','normal');
+  doc.text(`Order #: ${orderNo}`, pageWidth - margin, y-6, { align:'right' });
+  doc.text(`Date: ${fmtDate(today)}`, pageWidth - margin, y+6, { align:'right' });
+  y += 32;
+
+  const name = document.getElementById('custName').value.trim();
+  const company = document.getElementById('custCompany').value.trim();
+  const email = document.getElementById('custEmail').value.trim();
+  const phone = document.getElementById('custPhone').value.trim();
+  const address = document.getElementById('custAddress').value.trim();
+  const method = methodDelivery.checked ? 'Delivery' : 'Pickup';
+
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(9);
+  doc.text('ORDER FOR', margin, y);
+  y += 14;
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(10);
+  doc.text(name + (company ? '  ·  '+company : ''), margin, y); y += 13;
+  doc.text(email + '  ·  ' + phone, margin, y); y += 13;
+  if(address){ doc.text(address, margin, y); y += 13; }
+  doc.text('Fulfillment: ' + method, margin, y); y += 24;
+
+  const colItem = margin, colSize = margin+220, colQty = margin+310, colPrice = margin+370, colSub = pageWidth-margin;
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(9);
+  doc.text('ITEM', colItem, y);
+  doc.text('SIZE', colSize, y);
+  doc.text('QTY', colQty, y);
+  doc.text('PRICE/UNIT', colPrice, y);
+  doc.text('SUBTOTAL', colSub, y, { align:'right' });
+  y += 8;
+  doc.setDrawColor(30,29,26);
+  doc.line(margin, y, pageWidth-margin, y);
+  y += 16;
+
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(10);
+  orderLinesForDoc.forEach(l=>{
+    if(y > 740){ doc.addPage(); y = 50; }
+    doc.text(String(l.item), colItem, y, { maxWidth: 210 });
+    doc.text(String(l.size), colSize, y, { maxWidth: 80 });
+    doc.text(String(l.qty), colQty, y);
+    doc.text(fmtMoney(l.price), colPrice, y);
+    doc.text(fmtMoney(l.subtotal), colSub, y, { align:'right' });
+    y += 20;
+  });
+
+  y += 6;
+  doc.setDrawColor(200,200,200);
+  doc.line(margin, y, pageWidth-margin, y);
+  y += 22;
+
+  const total = orderLinesForDoc.reduce((sum,l)=>sum+l.subtotal, 0);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(13);
+  doc.text('TOTAL', colPrice, y);
+  doc.text(fmtMoney(total), colSub, y, { align:'right' });
+  y += 40;
+
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(8.5);
+  doc.setTextColor(110,110,105);
+  doc.text('Thank you for your order.', margin, y);
+  y += 12;
+  doc.text('Payment terms: 30 day payment.', margin, y);
+
+  return { doc, orderNo, name, company };
+}
+
+function buildQuoteDoc(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:'pt', format:'a4' });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 48;
+  let y = 50;
+
+  // Logo (200x83 native, scaled down)
+  const logoW = 110, logoH = 45.65;
+  doc.addImage(LOGO_BASE64, 'PNG', margin, y, logoW, logoH);
+
+  // Company block, right-aligned
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(11);
+  doc.text(COMPANY_NAME, pageWidth - margin, y+10, { align:'right' });
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(9);
+  doc.text(COMPANY_ADDRESS, pageWidth - margin, y+24, { align:'right' });
+  doc.text(COMPANY_EMAIL + '  ·  ' + COMPANY_PHONE, pageWidth - margin, y+37, { align:'right' });
+
+  y += logoH + 30;
+  doc.setDrawColor(200,200,200);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 30;
+
+  // Title + quote meta
+  const today = new Date();
+  const validUntil = new Date(today.getTime() + 30*24*60*60*1000);
+  const fmtDate = d => d.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+  const pad = (n, len=2) => String(n).padStart(len, '0');
+
+  const quoteLines = getValidOrderLines();
+
+  // 9-character quote number: 6-digit date (YYMMDD) + 3-char hash of the items/qty ordered.
+  // Same day + same order contents will always hash the same; a different cart on the
+  // same day produces a different suffix, so quotes stay unique without needing extra length.
+  function hashItems(lines){
+    const str = lines.map(l=>`${l.item}|${l.size}|${l.qty}`).join(';');
+    let h = 0;
+    for(let i=0;i<str.length;i++){ h = (h * 31 + str.charCodeAt(i)) >>> 0; }
+    return h.toString(36).toUpperCase().slice(-3).padStart(3,'0');
+  }
+  const yy = String(today.getFullYear()).slice(-2);
+  const quoteNo = yy + pad(today.getMonth()+1) + pad(today.getDate()) + hashItems(quoteLines);
+
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(18);
+  doc.text('QUOTATION', margin, y);
+  doc.setFontSize(9);
+  doc.setFont('helvetica','normal');
+  doc.text(`Quote #: ${quoteNo}`, pageWidth - margin, y-12, { align:'right' });
+  doc.text(`Date: ${fmtDate(today)}`, pageWidth - margin, y, { align:'right' });
+  doc.text(`Valid until: ${fmtDate(validUntil)} (30 days)`, pageWidth - margin, y+12, { align:'right' });
+  y += 32;
+
+  // Bill To
+  const name = document.getElementById('custName').value.trim();
+  const company = document.getElementById('custCompany').value.trim();
+  const email = document.getElementById('custEmail').value.trim();
+  const phone = document.getElementById('custPhone').value.trim();
+  const address = document.getElementById('custAddress').value.trim();
+  const method = methodDelivery.checked ? 'Delivery' : 'Pickup';
+
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(9);
+  doc.text('QUOTE FOR', margin, y);
+  y += 14;
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(10);
+  doc.text(name + (company ? '  ·  '+company : ''), margin, y); y += 13;
+  doc.text(email + '  ·  ' + phone, margin, y); y += 13;
+  if(address){ doc.text(address, margin, y); y += 13; }
+  doc.text('Fulfillment: ' + method, margin, y); y += 24;
+
+  // Items table header
+  const colItem = margin, colSize = margin+220, colQty = margin+310, colPrice = margin+370, colSub = pageWidth-margin;
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(9);
+  doc.text('ITEM', colItem, y);
+  doc.text('SIZE', colSize, y);
+  doc.text('QTY', colQty, y);
+  doc.text('PRICE/UNIT', colPrice, y);
+  doc.text('SUBTOTAL', colSub, y, { align:'right' });
+  y += 8;
+  doc.setDrawColor(30,29,26);
+  doc.line(margin, y, pageWidth-margin, y);
+  y += 16;
+
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(10);
+  quoteLines.forEach(l=>{
+    if(y > 740){ doc.addPage(); y = 50; } // simple pagination for long orders
+    doc.text(String(l.item), colItem, y, { maxWidth: 210 });
+    doc.text(String(l.size), colSize, y, { maxWidth: 80 });
+    doc.text(String(l.qty), colQty, y);
+    doc.text(fmtMoney(l.price), colPrice, y);
+    doc.text(fmtMoney(l.subtotal), colSub, y, { align:'right' });
+    y += 20;
+  });
+
+  y += 6;
+  doc.setDrawColor(200,200,200);
+  doc.line(margin, y, pageWidth-margin, y);
+  y += 22;
+
+  const total = quoteLines.reduce((sum,l)=>sum+l.subtotal, 0);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(13);
+  doc.text('TOTAL', colPrice, y);
+  doc.text(fmtMoney(total), colSub, y, { align:'right' });
+  y += 40;
+
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(8.5);
+  doc.setTextColor(110,110,105);
+  doc.text('This quotation is valid for 30 days from the date of issue. Prices are subject to change thereafter.', margin, y);
+  y += 12;
+  doc.text('Payment terms: 30 day payment.', margin, y);
+
+  return { doc, quoteNo, name, company };
+}
+
+exportQuoteBtn.addEventListener('click', async ()=>{
+  const name = document.getElementById('custName').value.trim();
+  const email = document.getElementById('custEmail').value.trim();
+  const phone = document.getElementById('custPhone').value.trim();
+  if(!name || !email || !phone){
+    quoteError.textContent = 'Please fill in name, email, and phone before exporting a quote.';
+    return;
+  }
+  const lines = getValidOrderLines();
+  if(lines.length === 0){
+    quoteError.textContent = 'No valid items to quote.';
+    return;
+  }
+  quoteError.textContent = '';
+  exportQuoteBtn.disabled = true;
+  exportQuoteBtn.textContent = 'Generating…';
+
+  try{
+    const { doc, quoteNo, name: custName, company } = buildQuoteDoc();
+    const filename = `Quote-${quoteNo}-${custName.replace(/\s+/g,'_')}.pdf`;
+
+    // 1) Give the customer their PDF
+    doc.save(filename);
+
+    // 2) Send the full quote details (as text) to info@allcrucial.com via Web3Forms.
+    // Note: free-tier form services don't support file attachments, so the office
+    // copy contains the same information as the PDF but not the PDF file itself —
+    // the customer's downloaded copy is the actual branded document.
+    if(WEB3FORMS_ACCESS_KEY && WEB3FORMS_ACCESS_KEY !== 'YOUR_ACCESS_KEY'){
+      try{
+        const total = lines.reduce((sum,l)=>sum+l.subtotal, 0);
+        const itemsSummary = lines
+          .map(l=>`${l.item} (${l.size}) x${l.qty} @ ${fmtMoney(l.price)} = ${fmtMoney(l.subtotal)}`)
+          .join('\n');
+        const quoteMessage = [
+          `Quote #: ${quoteNo}`,
+          `Customer: ${custName}${company ? ' / '+company : ''}`,
+          `Email: ${email}`,
+          `Phone: ${phone}`,
+          ``,
+          `Items:`,
+          itemsSummary,
+          ``,
+          `Total: ${fmtMoney(total)}`,
+          ``,
+          `(Customer has downloaded the branded PDF version of this quote.)`,
+        ].join('\n');
+
+        await fetch(WEB3FORMS_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type':'application/json', 'Accept':'application/json' },
+          body: JSON.stringify({
+            access_key: WEB3FORMS_ACCESS_KEY,
+            subject: `Quote ${quoteNo} — ${custName}${company ? ' / '+company : ''}`,
+            from_name: custName,
+            email: email,
+            replyto: email,
+            name: custName, phone,
+            message: quoteMessage,
+          }),
+        });
+      }catch(sendErr){
+        // Non-fatal — the customer already has their PDF even if the office copy failed to send
+        console.warn('Could not send office copy of quote:', sendErr.message);
+      }
+    }
+  }catch(err){
+    quoteError.textContent = 'Could not generate the PDF: ' + err.message;
+  }finally{
+    exportQuoteBtn.disabled = false;
+    exportQuoteBtn.textContent = 'Export Quote';
+  }
+});
+
+function resetOrderForm(){
+  orderLines = [];
+  addOrderLineBtn.click(); // seeds a single fresh line at qty 1
+  document.getElementById('custName').value = ''; // only the Representative field resets — company/email/phone/address stay fixed
+  methodDelivery.checked = false;
+  methodPickup.checked = false;
+  orderNowError.textContent = '';
+  detailsError.textContent = '';
+  renderOrder();
+}
+newOrderBtn.addEventListener('click', ()=>{
+  resetOrderForm();
+  showPage('order');
+});
+
+// ---------- Init ----------
+(function init(){
+  renderPriceList();
+  renderOrder();
+  showPage('order');
+  // Auto-sync immediately using the sheet baked in above
+  doSync();
+})();
+</script>
+</body>
+</html>
